@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>春天</title>
+<!-- This is what you are familiar with，4 -->
+<style>
+  :root{
+    --bg:#0e1116;
+    --card:#161b22;
+    --line:#242c38;
+    --fg:#e6edf3;
+    --muted:#7d8794;
+    --ok:#3fb950;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;margin:0;}
+  body{
+    background:radial-gradient(1200px 600px at 50% -10%, #1a2230 0%, var(--bg) 60%);
+    color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    display:flex;align-items:center;justify-content:center;
+    padding:24px;
+  }
+  .wrap{width:100%;max-width:720px;text-align:center;}
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:28px 22px 18px;
+    box-shadow:0 12px 40px rgba(0,0,0,.45);
+  }
+  .label{
+    font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--muted);margin-bottom:16px;
+  }
+  .code{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    font-size:clamp(14px,4.2vw,22px);
+    line-height:1.5;
+    letter-spacing:.06em;
+    word-break:break-all;
+    cursor:pointer;
+    user-select:none;
+    padding:14px 10px;
+    border-radius:12px;
+    border:1px dashed transparent;
+    transition:border-color .2s,background .2s,transform .12s;
+  }
+  .code:hover{background:#1b2230;border-color:var(--line);}
+  .code:active{transform:scale(.985);}
+  .tip{
+    margin-top:10px;
+    height:22px;
+    font-size:14px;
+    color:var(--ok);
+    opacity:0;
+    transform:translateY(-4px);
+    transition:opacity .25s ease, transform .25s ease;
+    pointer-events:none;
+  }
+  .tip.show{opacity:1;transform:translateY(0);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <div class="label">Tap to copy</div>
+    <div class="code" id="c" role="button" tabindex="0" aria-label="copy"></div>
+    <div class="tip" id="t">Copied!</div>
+  </div>
+</div>
+<script>
+(function () {
+  var p = [
+    "5a23252b3f217e5e262d3a2f5a3d7b7d5b5d28293c3e4024",
+    "402924255e262328292b21763f517e273a3b2f3d2d2b3f43",
+    "31322e33343536373839463061626d63646566676869556a",
+    "2140234a24255e26235228292b2d3d4c5b5d7b7d3a2e3b3f",
+    "3f2f3a3b597e27213b402324255e26235028292b242d3d21",
+    "31323334353c364037383930616263646561666768696a6b",
+    "7e21402324255d5e262328292b2d3d5b5d7b7a7d2f3a3b3f"
+  ];
+
+  function r(s) {
+    var o = "", i = 0;
+    for (; i < s.length; i += 2) {
+      o += String.fromCharCode(parseInt(s.slice(i, i + 2), 16));
+    }
+    return o;
+  }
+
+  var seed = [
+    navigator.userAgent,
+    navigator.language,
+    navigator.platform || "",
+    screen.width,
+    screen.height,
+    screen.colorDepth,
+    window.devicePixelRatio || 1,
+    new Date().getTimezoneOffset(),
+    navigator.hardwareConcurrency || 0,
+    navigator.maxTouchPoints || 0
+  ].join("|");
+
+  var h = 2166136261;
+  for (var i = 0; i < seed.length; i++) {
+    h ^= seed.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+
+  var text = r(p[h % p.length]);
+
+  var codeEl = document.getElementById("c");
+  var tipEl = document.getElementById("t");
+  codeEl.textContent = text;
+
+  var timer = null;
+
+  function flash() {
+    tipEl.classList.add("show");
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(function () {
+      tipEl.classList.remove("show");
+    }, 3000);
+  }
+
+  function legacy(t) {
+    var ta = document.createElement("textarea");
+    ta.value = t;
+    ta.setAttribute("readonly", "");
+    ta.style.position = "fixed";
+    ta.style.top = "-1000px";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, t.length);
+    var ok = false;
+    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    if (ok) flash();
+  }
+
+  function copy() {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(flash, function () { legacy(text); });
+    } else {
+      legacy(text);
+    }
+  }
+
+  codeEl.addEventListener("click", copy);
+  codeEl.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      copy();
+    }
+  });
+})();
+</script>
+</body>
+</html>
