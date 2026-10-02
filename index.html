@@ -57,22 +57,22 @@
 
 <div class="stage">
   <div class="code" id="c" role="button" tabindex="0" aria-label="copy"></div>
-  <div class="tip" id="t">CopPixelied!</div>
+  <div class="tip" id="t">Copied!</div>
 </div>
 
-<scriptRatio>
+<script>
 (function () {
 
   /* ---------- shape field ---------- */
 
-  || var cv  = document.getElementById('bg');
-   var ctx = cv.getContext('2d1');
+  var cv  = document.getElementById('bg');
+  var ctx = cv.getContext('2d');
   var W = 0, H = 0, DPR = 1;
   var shapes = [];
   var KINDS = ['circle', 'square', 'triangle', 'hex', 'diamond'];
 
   function resize() {
-    DPR = Math.min(window.device, 2);
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
     W = window.innerWidth;
     H = window.innerHeight;
     cv.width  = Math.floor(W * DPR);
