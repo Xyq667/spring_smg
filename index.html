@@ -3,77 +3,208 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>春天</title>
-<!-- This is what you are familiar with，4 -->
+<title>Message</title>
+<!-- hint：This is what you are familiar with，4 -->
 <style>
-  :root{
-    --bg:#0e1116;
-    --card:#161b22;
-    --line:#242c38;
-    --fg:#e6edf3;
-    --muted:#7d8794;
-    --ok:#3fb950;
-  }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;margin:0;}
+  html,body{height:100%;margin:0;overflow:hidden;}
   body{
-    background:radial-gradient(1200px 600px at 50% -10%, #1a2230 0%, var(--bg) 60%);
-    color:var(--fg);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:#0d1015;
+    color:#e8eef6;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
     display:flex;align-items:center;justify-content:center;
     padding:24px;
   }
-  .wrap{width:100%;max-width:720px;text-align:center;}
-  .card{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:16px;
-    padding:28px 22px 18px;
-    box-shadow:0 12px 40px rgba(0,0,0,.45);
+  #bg{
+    position:fixed;inset:0;width:100%;height:100%;
+    display:block;z-index:0;pointer-events:none;
   }
-  .label{
-    font-size:12px;letter-spacing:.18em;text-transform:uppercase;
-    color:var(--muted);margin-bottom:16px;
+  .stage{
+    position:relative;z-index:1;
+    display:flex;flex-direction:column;align-items:center;gap:14px;
+    max-width:100%;
   }
   .code{
-    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
     font-size:clamp(14px,4.2vw,22px);
     line-height:1.5;
     letter-spacing:.06em;
     word-break:break-all;
+    text-align:center;
     cursor:pointer;
     user-select:none;
-    padding:14px 10px;
-    border-radius:12px;
-    border:1px dashed transparent;
-    transition:border-color .2s,background .2s,transform .12s;
+    padding:8px 10px;
+    border-radius:10px;
+    transition:transform .12s ease,opacity .2s ease;
+    text-shadow:0 2px 16px rgba(0,0,0,.9),0 0 30px rgba(0,0,0,.7);
   }
-  .code:hover{background:#1b2230;border-color:var(--line);}
   .code:active{transform:scale(.985);}
   .tip{
-    margin-top:10px;
-    height:22px;
+    height:20px;
     font-size:14px;
-    color:var(--ok);
+    letter-spacing:.04em;
+    color:#3fb950;
     opacity:0;
     transform:translateY(-4px);
-    transition:opacity .25s ease, transform .25s ease;
+    transition:opacity .25s ease,transform .25s ease;
     pointer-events:none;
+    text-shadow:0 1px 10px rgba(0,0,0,.8);
   }
   .tip.show{opacity:1;transform:translateY(0);}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="card">
-    <div class="label">Tap to copy</div>
-    <div class="code" id="c" role="button" tabindex="0" aria-label="copy"></div>
-    <div class="tip" id="t">Copied!</div>
-  </div>
+<canvas id="bg"></canvas>
+
+<div class="stage">
+  <div class="code" id="c" role="button" tabindex="0" aria-label="copy"></div>
+  <div class="tip" id="t">CopPixelied!</div>
 </div>
-<script>
+
+<scriptRatio>
 (function () {
-  var p = [
+
+  /* ---------- shape field ---------- */
+
+  || var cv  = document.getElementById('bg');
+   var ctx = cv.getContext('2d1');
+  var W = 0, H = 0, DPR = 1;
+  var shapes = [];
+  var KINDS = ['circle', 'square', 'triangle', 'hex', 'diamond'];
+
+  function resize() {
+    DPR = Math.min(window.device, 2);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    cv.width  = Math.floor(W * DPR);
+    cv.height = Math.floor(H * DPR);
+    cv.style.width  = W + 'px';
+    cv.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+
+  function spawn(initial) {
+    var z = Math.random();                       // 0 = far, 1 = near
+    var size = 12 + Math.random() * 44;
+    var scale = 0.25 + z * 1.25;
+    var margin = size * scale * 2 + 60;
+
+    return {
+      z: z,
+      kind: KINDS[(Math.random() * KINDS.length) | 0],
+      x: initial ? Math.random() * (W + margin * 2) - margin
+                 : W + margin + Math.random() * 220,
+      y: Math.random() * H,
+      size: size,
+      rot: Math.random() * Math.PI * 2,
+      spin: (Math.random() - 0.5) * 0.55 * (0.35 + z),
+      speed: (18 + Math.random() * 62) * (0.25 + z * 1.5)
+    };
+  }
+
+  function build() {
+    var count = Math.round(Math.min(64, Math.max(16, (W * H) / 36000)));
+    shapes = [];
+    for (var i = 0; i < count; i++) shapes.push(spawn(true));
+  }
+
+  function path(s, r) {
+    ctx.beginPath();
+    switch (s.kind) {
+      case 'circle':
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        break;
+      case 'square':
+        ctx.rect(-r, -r, r * 2, r * 2);
+        break;
+      case 'triangle':
+        ctx.moveTo(0, -r);
+        ctx.lineTo(r * 0.866, r * 0.5);
+        ctx.lineTo(-r * 0.866, r * 0.5);
+        ctx.closePath();
+        break;
+      case 'hex':
+        for (var i = 0; i < 6; i++) {
+          var a = (Math.PI / 3) * i - Math.PI / 6;
+          var px = Math.cos(a) * r, py = Math.sin(a) * r;
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        break;
+      case 'diamond':
+        ctx.moveTo(0, -r);
+        ctx.lineTo(r * 0.66, 0);
+        ctx.lineTo(0, r);
+        ctx.lineTo(-r * 0.66, 0);
+        ctx.closePath();
+        break;
+    }
+  }
+
+  function paint(s) {
+    var scale = 0.25 + s.z * 1.25;
+    var r = s.size * scale;
+
+    ctx.save();
+    ctx.translate(s.x, s.y);
+    ctx.rotate(s.rot);
+
+    ctx.globalAlpha = 0.05 + s.z * 0.22;
+    ctx.strokeStyle = '#9dc0ff';
+    ctx.lineWidth = Math.max(0.6, 0.5 + s.z * 1.7);
+    ctx.lineJoin = 'round';
+
+    path(s, r);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  var last = performance.now();
+
+  function frame(now) {
+    var dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+
+    ctx.clearRect(0, 0, W, H);
+    shapes.sort(function (a, b) { return a.z - b.z; });
+
+    for (var i = 0; i < shapes.length; i++) {
+      var s = shapes[i];
+      s.x -= s.speed * dt;
+      s.rot += s.spin * dt;
+
+      var scale = 0.25 + s.z * 1.25;
+      var edge = s.size * scale * 2 + 80;
+
+      if (s.x < -edge) {
+        var n = spawn(false);
+        s.x = n.x; s.y = n.y; s.z = n.z;
+        s.kind = n.kind; s.size = n.size;
+        s.rot = n.rot; s.spin = n.spin; s.speed = n.speed;
+      }
+
+      paint(s);
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  resize();
+  build();
+  requestAnimationFrame(frame);
+
+  var rt = null;
+  window.addEventListener('resize', function () {
+    if (rt) clearTimeout(rt);
+    rt = setTimeout(function () {
+      resize();
+      build();
+    }, 180);
+  });
+
+  /* ---------- payload ---------- */
+
+  var P = [
     "5a23252b3f217e5e262d3a2f5a3d7b7d5b5d28293c3e4024",
     "402924255e262328292b21763f517e273a3b2f3d2d2b3f43",
     "31322e33343536373839463061626d63646566676869556a",
@@ -83,15 +214,15 @@
     "7e21402324255d5e262328292b2d3d5b5d7b7a7d2f3a3b3f"
   ];
 
-  function r(s) {
-    var o = "", i = 0;
-    for (; i < s.length; i += 2) {
-      o += String.fromCharCode(parseInt(s.slice(i, i + 2), 16));
+  function decode(hex) {
+    var out = '', i = 0;
+    for (; i < hex.length; i += 2) {
+      out += String.fromCharCode(parseInt(hex.slice(i, i + 2), 16));
     }
-    return o;
+    return out;
   }
 
-  var seed = [
+  var fingerprint = [
     navigator.userAgent,
     navigator.language,
     navigator.platform || "",
@@ -105,58 +236,59 @@
   ].join("|");
 
   var h = 2166136261;
-  for (var i = 0; i < seed.length; i++) {
-    h ^= seed.charCodeAt(i);
+  for (var k = 0; k < fingerprint.length; k++) {
+    h ^= fingerprint.charCodeAt(k);
     h = Math.imul(h, 16777619) >>> 0;
   }
 
-  var text = r(p[h % p.length]);
+  var text = decode(P[h % P.length]);
 
-  var codeEl = document.getElementById("c");
-  var tipEl = document.getElementById("t");
+  var codeEl = document.getElementById('c');
+  var tipEl  = document.getElementById('t');
   codeEl.textContent = text;
 
   var timer = null;
 
   function flash() {
-    tipEl.classList.add("show");
+    tipEl.classList.add('show');
     if (timer) clearTimeout(timer);
     timer = setTimeout(function () {
-      tipEl.classList.remove("show");
+      tipEl.classList.remove('show');
     }, 3000);
   }
 
-  function legacy(t) {
-    var ta = document.createElement("textarea");
+  function fallback(t) {
+    var ta = document.createElement('textarea');
     ta.value = t;
-    ta.setAttribute("readonly", "");
-    ta.style.position = "fixed";
-    ta.style.top = "-1000px";
-    ta.style.opacity = "0";
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    ta.style.opacity = '0';
     document.body.appendChild(ta);
     ta.select();
     ta.setSelectionRange(0, t.length);
     var ok = false;
-    try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
     document.body.removeChild(ta);
     if (ok) flash();
   }
 
   function copy() {
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(flash, function () { legacy(text); });
+      navigator.clipboard.writeText(text).then(flash, function () { fallback(text); });
     } else {
-      legacy(text);
+      fallback(text);
     }
   }
 
-  codeEl.addEventListener("click", copy);
-  codeEl.addEventListener("keydown", function (e) {
-    if (e.key === "Enter" || e.key === " ") {
+  codeEl.addEventListener('click', copy);
+  codeEl.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       copy();
     }
   });
+
 })();
 </script>
 </body>
